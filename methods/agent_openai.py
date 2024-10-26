@@ -456,3 +456,103 @@ def fit_profile(search, profile_expected):
 
     # Extract the structured output
     return completion.choices[0].message.parsed
+
+
+class MatchProfileHacker(BaseModel):
+    match: str
+    intro: str
+    profile_agent: str
+    email: str
+    linkedin_message: str
+    twitter_dm: str
+    twitter_public_message: str
+    icebreaker: str
+    casual_intro: str
+    content_collab_intro: str
+
+def fit_match(dynamic_profile_linkedin_1, dynamic_profile_linkedin_2, 
+              current_context_profile_1, current_context_profile_2, 
+              detailed_experiences_1, detailed_experiences_2, 
+              profile_1_looking_for):
+
+    system_context = """
+        **Profile 1 LinkedIn Posts:** {dynamic_profile_linkedin_1}
+        **Profile 2 LinkedIn Posts:** {dynamic_profile_linkedin_2}
+
+        **Current Context Profile 1 (Recent Posts):** {current_context_profile_1}
+        **Current Context Profile 2 (Recent Posts):** {current_context_profile_2}
+
+        **Detailed Experiences of Profile 1:** {detailed_experiences_1}
+        **Detailed Experiences of Profile 2:** {detailed_experiences_2}
+
+        **Profile 1's Objective:** {profile_1_looking_for}
+
+        ---
+
+        **Your Task:** Based on this context, provide the following structured outputs:
+
+        ### Step 1: Analyze the Match
+        - Compare key traits and experiences between both profiles.
+        - Determine the qualities or experiences that make them a potential match.
+
+        ### Step 2: Generate a Short Explanation
+        - Summarize why these profiles align well, focusing on shared skills, interests, or complementary qualities.
+
+        ### Step 3: Brainstorm an Intro Topic
+        - Use details from recent LinkedIn posts or shared experiences to suggest an engaging topic that will resonate.
+
+        ### Step 4: Create a Specific Common Topic
+        - Craft a detailed experience or project that both profiles can discuss, emphasizing any specific details that align with Profile 1's interests.
+
+        ### Step 5: Write the Profile of the Agent
+        - Based on the details of Profile 1, create a profile that describes them as an agent. Highlight areas of expertise and strengths in a natural, professional tone.
+
+        ### Step 6: Generate Intro Messages for Multiple Platforms:
+        - **Personalized Email:** Write an email introducing Profile 1 to Profile 2, mentioning shared experiences or recent posts.
+        - **LinkedIn Message:** Create a short, friendly message to connect with Profile 2 on LinkedIn.
+        - **Twitter DM:** Write a direct message for Twitter, mentioning mutual interests or posts.
+        - **Twitter Public Message:** Write a public message reply or tweet to catch their attention.
+        - **Icebreaker:** Create an icebreaker question based on Profile 2’s recent activities or shared interests.
+        - **Casual Introduction:** Write a friendly intro using informal language to make a connection feel approachable.
+        - **Introduction through Content Collaboration:** Propose a small collaboration based on shared professional interests or expertise.
+
+        **Outputs:**
+        1. match: **Why This is a Good Match**
+        2. intro: **Starting Point for Conversation**
+        3. profile_agent: **Profile Summary of the Agent**
+        4. email: **Personalized Email**
+        5. linkedin_message: **LinkedIn Message**
+        6. twitter_dm: **Twitter DM**
+        7. twitter_public_message: **Public Twitter Message**
+        8. icebreaker: **Icebreaker for Starting Conversation**
+        9. casual_intro: **Casual Introduction**
+        10. content_collab_intro: **Intro through Content Collaboration**
+    """.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1,
+               dynamic_profile_linkedin_2=dynamic_profile_linkedin_2,
+               current_context_profile_1=current_context_profile_1,
+               current_context_profile_2=current_context_profile_2,
+               detailed_experiences_1=detailed_experiences_1,
+               detailed_experiences_2=detailed_experiences_2,
+               profile_1_looking_for=profile_1_looking_for)
+
+    messages = [
+        {
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": system_context
+                }
+            ]
+        }
+    ]
+
+    # Make the API call with structured output
+    completion = open_ai_client.beta.chat.completions.parse(
+        model=model,
+        messages=messages,
+        response_format=MatchProfileHacker,
+    )
+
+    # Extract the structured output
+    return completion.choices[0].message.parsed

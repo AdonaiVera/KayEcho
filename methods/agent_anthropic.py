@@ -59,20 +59,7 @@ def get_profile_db(profile_user):
 
     return message.content
 
-def agent_simulation(prompt, gpt_parameter):
-    '''
-    response = anthropic_client.completion.create(
-        model=model,
-        prompt=prompt,
-        temperature=gpt_parameter["temperature"],
-        max_tokens_to_sample=gpt_parameter["max_tokens"],
-        top_p=gpt_parameter["top_p"],
-        frequency_penalty=gpt_parameter["frequency_penalty"],
-        presence_penalty=gpt_parameter["presence_penalty"],
-        stream=gpt_parameter["stream"]
-    )
-    '''
-    
+def agent_simulation(prompt, gpt_parameter):    
     messages=[{
         "role": "user",
         "content": prompt
@@ -85,7 +72,7 @@ def agent_simulation(prompt, gpt_parameter):
         messages=messages
     )
     
-    return message.content
+    return message.content[0].text
 
 class ScriptConversation(BaseModel):
     script: list[str]

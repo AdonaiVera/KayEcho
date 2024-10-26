@@ -87,12 +87,14 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
 
             Current Context: {current_context}
 
+            Toughts: {respose_insights}
+
             (This is what is in {profile_name_1}'s head: {detailed_experiences_1} Beyond this, {profile_name_1} doesn't necessarily know anything more about {profile_name_2}!) 
 
             (This is what is in {profile_name_2}'s head: {detailed_experiences_2} Beyond this, {profile_name_2} doesn't necessarily know anything more about {profile_name_1}!) 
 
             Generate their conversation here as a script in a list, and output in JSON format with “script_items” (list of dicts with “character_1” and “character_2”).
-        '''.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, past_context=past_context, current_context=current_context, profile_name_1=profile_name_1, profile_name_2=profile_name_2, detailed_experiences_1=detailed_experiences_1, detailed_experiences_2=detailed_experiences_2)
+        '''.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, past_context=past_context, current_context=current_context, profile_name_1=profile_name_1, profile_name_2=profile_name_2, detailed_experiences_1=detailed_experiences_1, detailed_experiences_2=detailed_experiences_2, respose_insights=respose_insights)
         
         print("PROMPT WORKING CONVERSATION HERE DYNAMICS ...")
         response=agent_simulation_chat(prompt, temporal_memory, gpt_param)
@@ -118,10 +120,59 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
             'assistant':response_conversation
         })
 
+        print(response_conversation)
 
-        #respose_insights_response="\n".join(respose_insights)
+        # First Perspective 
+        prompt='''
+            Here is the conversation that happened between {profile_name_1} and {profile_name_2}. 
+            {response_conversation}
 
-        yield chat_history, ""
+            Summarize what {profile_name_1} thought about {profile_name_2} in one short sentence. The sentence needs to be in third person:
+        '''.format(response_conversation=response_conversation, profile_name_1=profile_name_1, profile_name_2=profile_name_2)
+        
+        response_summarize=agent_simulation(prompt, gpt_param)
+        respose_insights.append(response_summarize)
+
+        # WE SHOULD DO THIS WITH THE STATEMENTS -> TEMPORAL DO IT WITH THE CONVERSATION
+        prompt='''
+            [Conversation]
+            {response_conversation}
+
+            Write down if there is anything from the conversation that {profile_name_1} might have found interesting from {profile_name_2}'s perspective, in a full sentence. 
+
+            {profile_name_1}          
+            '''.format(response_conversation=response_conversation, profile_name_1=profile_name_1, profile_name_2=profile_name_2)
+        
+        response_interesting=agent_simulation(prompt, gpt_param)
+        respose_insights.append(response_interesting)
+
+        # Other perspective
+        prompt='''
+            Here is the conversation that happened between {profile_name_2} and {profile_name_1}. 
+            {response_conversation}
+
+            Summarize what {profile_name_2} thought about {profile_name_1} in one short sentence. The sentence needs to be in third person:
+        '''.format(response_conversation=response_conversation, profile_name_1=profile_name_1, profile_name_2=profile_name_2)
+        
+        response_summarize=agent_simulation(prompt, gpt_param)
+        respose_insights.append(response_summarize)
+
+        # WE SHOULD DO THIS WITH THE STATEMENTS -> TEMPORAL DO IT WITH THE CONVERSATION
+        prompt='''
+            [Conversation]
+            {response_conversation}
+
+            Write down if there is anything from the conversation that {profile_name_2} might have found interesting from {profile_name_1}'s perspective, in a full sentence. 
+
+            {profile_name_1}          
+            '''.format(response_conversation=response_conversation, profile_name_1=profile_name_1, profile_name_2=profile_name_2)
+        
+        response_interesting=agent_simulation(prompt, gpt_param)
+        respose_insights.append(response_interesting)
+
+        respose_insights_response="\n".join(respose_insights)
+
+        yield chat_history, respose_insights_response
             
 # Create Gradio interface
 with gr.Blocks(css=".title {color: white; text-align: center; background-color: #007BFF; padding: 10px; border-radius: 5px;}") as demo:

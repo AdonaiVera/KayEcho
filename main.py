@@ -20,6 +20,7 @@ def lang_chain_handler():
     data = request.get_json()
     user_token = data.get("token")
     input_text = data.get("text")
+
     
     if not user_token or not input_text:
         return jsonify({"error": "Token and text are required"}), 400
@@ -29,8 +30,17 @@ def lang_chain_handler():
     if user_token not in session_agents:
         session_agents[user_token] = langChainHandler(user_token, config)
     
-    response = session_agents[user_token].stream_graph_updates(user_input=input_text)
-    return jsonify({"response": response}), 200
+    response, profile_user = session_agents[user_token].stream_graph_updates(user_input=input_text)
+    return jsonify(
+        {
+            "response":  {
+                "text":response,
+                "token":user_token
+            },
+            "profile_user": profile_user,
+        },
+    ), 200
+    
 
 # Endpoint to handle langChainHandlerSearch requests
 @app.route('/langChainHandlerSearch', methods=['POST'])
@@ -38,6 +48,7 @@ def lang_chain_handler_search():
     data = request.get_json()
     user_token = data.get("token")
     input_text = data.get("text")
+    linkedin_id = data.get("linkedin_id")
     
     if not user_token or not input_text:
         return jsonify({"error": "Token and text are required"}), 400
@@ -47,22 +58,13 @@ def lang_chain_handler_search():
     if user_token not in session_agents:
         session_agents[user_token] = langChainHandlerSearch(user_token, config)
     
-    response, profile_user = session_agents[user_token].stream_graph_updates(user_input=input_text)
-    return jsonify(
-        {
-            "response":  {
-                "text": response,
-                "token":user_token
-            },
-            "profile_user": profile_user,
-        },
-    ), 200
+    response = session_agents[user_token].stream_graph_updates(user_input=input_text, linkedin_id=linkedin_id)
+    return jsonify({"response": response}), 200
 
 # Endpoint to handle langChainHandlerSearch requests
 @app.route('/userProfile', methods=['POST'])
 def userProfile():
     data = request.get_json()
-
     linkedin_id = data.get("linkedin_id")
 
     if not linkedin_id:

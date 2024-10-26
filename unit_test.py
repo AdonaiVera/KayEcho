@@ -1,8 +1,8 @@
 import requests
 
 # Define the URLs for all endpoints
-url= 'http://100.66.8.252:8080'
-#url= 'https://kayecho-364607428894.us-central1.run.app'
+# url= 'http://100.66.8.252:8080'
+url= 'https://kayecho-364607428894.us-central1.run.app'
 url_lang_chain_handler = f'{url}/langChainHandler'
 url_lang_chain_handler_search = f'{url}/langChainHandlerSearch'
 url_profile_linkedin = f'{url}/userProfile'
@@ -12,7 +12,7 @@ profile_linkedin_2 = 'https://www.linkedin.com/in/quinteroossa/'
 
 # Example data payload with user token and input text
 payload = {
-    "token": "e394cdcd-b6b4-42af-9033-2f648a8e71f3",  # Replace with actual user token
+    "token": "3669fe7bf99a1e31bc490138ad16e253",  # Replace with actual user token
     "text": "This is a test input text."
 }
 
@@ -69,21 +69,27 @@ def test_simulate_conversation():
     else:
         print("Error:", response.status_code, response.text)
 
-'''
+
+
+
 # Run tests
 print("Testing langChainHandler:")
 test_lang_chain_handler()
 
+'''
+
 print("\nTesting langChainHandlerSearch:")
 test_lang_chain_handler_search()
 
+
 print("\nTesting userProfile:")
 test_get_profile()
-'''
+
+
 
 print("\nTesting simulateConversation:")
 test_simulate_conversation()
 
-
+'''
 
 

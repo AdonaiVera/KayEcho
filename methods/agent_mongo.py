@@ -135,7 +135,7 @@ class MongoDBHandler:
         
         return results_list
 
-    def retrieve_relevant_data_old(self, query, user, collection_type, top_k=3, similarity_threshold=0.4):
+    def retrieve_relevant_data_old(self, query, user, collection_type, top_k=5, similarity_threshold=0.4):
         """Retrieve the most relevant documents for a specific user from MongoDB using vector search."""
         query_embedding = self.generate_embeddings(query)
 

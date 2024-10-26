@@ -29,8 +29,12 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, BaseMessage, AnyMessage, AIMessage
 from langchain_anthropic import AnthropicLLM
 
+from methods.agent_scrapper import extract_linkedin_profile, clean_linkedin_profile, get_post
+from methods.agent_anthropic import get_profile
+from methods.agent_openai import fit_match
 
 import random
+import json
 
 class GradeProfile(BaseModel):
     """Binary score for relevance check on retrieved profiles.."""
@@ -160,7 +164,6 @@ class langChainHandlerSearch:
         # Retrieve documents
         documents=self.mongo_handler.retrieve_relevant_data_old(profile, "", "user_profile")
 
-
         return {"profile":profile,"documents": documents, "messages": [AIMessage(content=profile)]}
     
     def grade_profiles(self, state):
@@ -179,13 +182,9 @@ class langChainHandlerSearch:
         documents=state["documents"]
         profile=state['profile']
         
-        print("DOCUMENTS")
-        print(documents)
-        print("FINISH")
         # Score each doc
         filtered_docs = []
         for d in documents:
-            print(d['profile'])
             score = self.retrieval_grader.invoke(
                 {"messages": messages, "document": d['profile'], "profile": profile, }
             )
@@ -245,8 +244,38 @@ class langChainHandlerSearch:
             print("---DECISION: GENERATE---")
             return "generate"
     
+    # Define the function to simulate the chat
+    def get_profile_match(self, linkedin_1, linkedin_2, profile_1_looking_for):
+
+        dynamic_profile_linkedin_1_base = extract_linkedin_profile(linkedin_1)
+        dynamic_profile_linkedin_1, detailed_experiences_1 = clean_linkedin_profile(dynamic_profile_linkedin_1_base)
+        dynamic_profile_1=get_profile(dynamic_profile_linkedin_1)
+
+        dynamic_profile_linkedin_2_base = extract_linkedin_profile(linkedin_2)
+        dynamic_profile_linkedin_2, detailed_experiences_2 = clean_linkedin_profile(dynamic_profile_linkedin_2_base)
+        dynamic_profile_2=get_profile(dynamic_profile_linkedin_2)
+
+        post_result_1, list_posts_1=get_post(linkedin_1)
+        post_result_2, list_posts_2=get_post(linkedin_2)
+
+        print("Check the profile that we extracted here: ")
+        print(dynamic_profile_linkedin_1)
+
+        print("Check the detailed from the user profile 1: ")
+        print(detailed_experiences_1)
+
+        print("Check the detailed from the user profile 2: ")
+        print(detailed_experiences_2)
+
+        return fit_match(dynamic_profile_linkedin_1, dynamic_profile_linkedin_2, 
+              list_posts_1, list_posts_2, 
+              detailed_experiences_1, detailed_experiences_2, 
+              profile_1_looking_for)
+            
+
+            
     # Define the handler for the Improve
-    def stream_graph_updates(self, user_input: str):
+    def stream_graph_updates(self, user_input: str, linkedin_id: str):
         
         inputs={
             "messages": [
@@ -257,8 +286,6 @@ class langChainHandlerSearch:
             ]
         }
 
-        print("User input")
-        print(inputs)
         # Stream the graph
         response_agent=""
         for output in self.app.stream(inputs, self.config):
@@ -270,11 +297,42 @@ class langChainHandlerSearch:
                         print(message)
                         response_agent=str(message.content)
 
+                if 'documents' in value:
+                    documents=value['documents']
+
                 
             print("\n---\n")
 
+        print("More relevant documents")
+        print(documents)
+        print(type(documents))
+
+        # Take the first element
+        first_document = documents[0]
+
+        print("first_document")
+        print(first_document)
+        print(type(first_document))
+
+        # Final prompting and ajustment
+        response=self.get_profile_match(first_document["linkedin_url"], linkedin_id, user_input)
+
         # Final generation
-        return response_agent
+        return {
+            "name": first_document["user"],
+            "profile": first_document["profile"],
+            "linkedin_url": first_document["linkedin_url"],
+            "match": response.match,
+            "intro": response.intro,
+            "profile_agent": response.profile_agent,
+            "email": response.email,
+            "linkedin_message": response.linkedin_message,
+            "twitter_dm": response.twitter_dm,
+            "twitter_public_message": response.twitter_public_message,
+            "icebreaker": response.icebreaker,
+            "casual_intro": response.casual_intro,
+            "content_collab_intro": response.content_collab_intro
+        }
 
 # Define the handler for the Improve
 class langChainHandler:    
@@ -294,38 +352,22 @@ class langChainHandler:
 
         self.llm_model_legacy = AnthropicLLM(model='claude-2.1')
 
-        # Create the prompt template using the correct message formats
-        prompt_improve_question = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    """
-                    Base on the full converstion, define a clear profile of the profile that they are looking for
-                    Your task is to improve this prompt to be more detailed.  
-                    Prompt to improve: {context} 
-                    """
-                ),
-                MessagesPlaceholder(variable_name="messages")
-            ]
-        )
-
-        self.improve_prompt_chain = prompt_improve_question | self.llm_model_legacy
-
         # Prompt imput user question
         prompt_agent_discover = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
                     """
-                    You are guiding the user to outline the perfect profile they are searching for
-                    Ask relevant questions that will help refine the existing profile, only ask the most relevant question.
+                    You are helping the user outline the ideal profile they are looking for. 
+                    Ask focused questions that refine the profile, ensuring each question is directly relevant 
+                    to identifying key skills, experience, and attributes. Prioritize only the most essential 
+                    details to create a precise match. Only one question is needed.
                     """
                 ),
                 MessagesPlaceholder(variable_name="messages")
             ]
         )
 
-        
 
         self.agent_discover_prompt = prompt_agent_discover | self.llm_model | StrOutputParser()
 
@@ -335,8 +377,11 @@ class langChainHandler:
                 (
                     "system", 
                     """
-                    Based on the existing profile ({profile}) and the user's new specification {last_message}, 
-                    refine the profile to match exactly what the user is looking for. If there is no profile yet, create a very basic one
+                    "Based on the conversation, generate a profile (max 5 sentences) that aligns closely with what the user seeks. 
+                    Focus on relevant skills and experience that fulfill their requirements.
+
+                    Example output:
+                    Searching for a software developer skilled in Python and machine learning with experience in cloud deployment.
                     """
                 ),
                 MessagesPlaceholder(variable_name="messages")
@@ -356,12 +401,7 @@ class langChainHandler:
       
         # Compile the graph
         self.app = workflow.compile(checkpointer=self.memory)
-    
-        # Draw the graph
-        graph_image_path = "figures/graph_image_discover.png"
-        with open(graph_image_path, "wb") as f:
-            f.write(self.app.get_graph().draw_mermaid_png())
-    
+        
     def agent_discover(self, state):
         """
         Generate casual answer
@@ -403,10 +443,6 @@ class langChainHandler:
         for output in self.app.stream(inputs, self.config):
             for key, value in output.items():
                 # Node
-                print(key)
-                print(value)
-                print(f"Node '{key}':")
-                print(f"Value '{value}':")
                 if 'messages' in value:
                     for message in value['messages']:
                         print(message)
