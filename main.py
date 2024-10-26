@@ -6,6 +6,7 @@ from methods.agent_scrapper import extract_linkedin_profile, clean_linkedin_prof
 from methods.agent_anthropic import get_profile, fit_profile, find_insights, get_profile_db, match_profile_agent, agent_simulation, agent_simulation_chat
 import json 
 from flask_cors import CORS
+import time
 
 app = Flask(__name__)
 CORS(app) 
@@ -80,42 +81,82 @@ def simulate_conversation():
     if not linkedin_1 or not linkedin_2:
         return jsonify({"error": "Both LinkedIn profiles are required"}), 400
     
-    # Retrieve and process LinkedIn profiles
-    dynamic_profile_1, detailed_experiences_1 = clean_linkedin_profile(extract_linkedin_profile(linkedin_1))
-    dynamic_profile_2, detailed_experiences_2 = clean_linkedin_profile(extract_linkedin_profile(linkedin_2))
-    profile_name_1 = dynamic_profile_1['response']['full_name']
-    profile_name_2 = dynamic_profile_2['response']['full_name']
+    dynamic_profile_linkedin_1_base = extract_linkedin_profile(linkedin_1)
+    dynamic_profile_linkedin_1, detailed_experiences_1 = clean_linkedin_profile(dynamic_profile_linkedin_1_base)
+    dynamic_profile_1=get_profile(dynamic_profile_linkedin_1)
 
-    # Retrieve recent posts and insights
-    post_result_1, list_posts_1 = get_post(linkedin_1)
-    post_result_2, list_posts_2 = get_post(linkedin_2)
-    insights_list = list_posts_1[:2] + list_posts_2[:2]
-    topic_discussion = [f"I saw that {insight}, let's discuss about that." for insight in insights_list] or [
-        "Hi, let's talk about your most successful story and what is the most exciting thing you've done in this area?"
-    ]
+    dynamic_profile_linkedin_2_base = extract_linkedin_profile(linkedin_2)
+    dynamic_profile_linkedin_2, detailed_experiences_2 = clean_linkedin_profile(dynamic_profile_linkedin_2_base)
+    dynamic_profile_2=get_profile(dynamic_profile_linkedin_2)
 
+    post_result_1, list_posts_1=get_post(linkedin_1)
+    post_result_2, list_posts_2=get_post(linkedin_2)
+
+    print("Check the profile that we extracted here: ")
+    print(dynamic_profile_linkedin_1)
+
+    print("Check the detailed from the user profile 1: ")
+    print(detailed_experiences_1)
+
+    print("Check the detailed from the user profile 2: ")
+    print(detailed_experiences_2)
+
+    profile_name_1=dynamic_profile_linkedin_1_base['response']['full_name']
+    profile_name_2=dynamic_profile_linkedin_2_base['response']['full_name']
+    # Simulate autonomous loop with the common topics
+    insights_list=[]
+
+    # Add the first two insights from the posts
+    insights_list=list_posts_1[:2]+list_posts_2[:2]
+
+    # Improve the way that we introduce the past context
+    if not insights_list:
+        print("No insights found.")
+        topic_discussion=f"Hi, Lets talk about your most successfull story and what is the most exciting thing you have done in this area?"
+    else:
+        topic_discussion=[f"I saw that {insight}, let's discuss about that." for insight in insights_list]
+    
+      
     # Generate conversation
     temporal_memory = []
     chat_history = []
+    past_context=""
     for current_context in topic_discussion:
-        prompt = f'''
-            Character 1: {dynamic_profile_1}
-            Character 2: {dynamic_profile_2}
-            Past Context: {temporal_memory}
-            Current Context: {current_context}
-            (This is what {profile_name_1} knows about {profile_name_2} and vice-versa.)
-            Generate their conversation as a list in JSON format with “script_items” (list of dicts with “character_1” and “character_2”).
-        '''
-        response = agent_simulation_chat(prompt, temporal_memory)
-        response_conversation_json = json.loads(response)
+        print("current context")
+        print(current_context)
+        prompt='''
+            Character 1:{dynamic_profile_linkedin_1}
+            Character 2:{dynamic_profile_linkedin_2}
 
-        # Append conversation items to chat history and temporal memory
-        for item in response_conversation_json["script_items"]:
+            Past Context: {past_context}
+
+            Current Context: {current_context}
+
+            (This is what is in {profile_name_1}'s head: {detailed_experiences_1} Beyond this, {profile_name_1} doesn't necessarily know anything more about {profile_name_2}!) 
+
+            (This is what is in {profile_name_2}'s head: {detailed_experiences_2} Beyond this, {profile_name_2} doesn't necessarily know anything more about {profile_name_1}!) 
+
+            Generate their conversation here as a script in a list, and output in JSON format with “script_items” (list of dicts with “character_1” and “character_2”).
+        '''.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, past_context=past_context, current_context=current_context, profile_name_1=profile_name_1, profile_name_2=profile_name_2, detailed_experiences_1=detailed_experiences_1, detailed_experiences_2=detailed_experiences_2)
+        
+        print("PROMPT WORKING CONVERSATION HERE DYNAMICS ...")
+        response=agent_simulation_chat(prompt, temporal_memory)
+
+        response_conversation_json=json.loads(response)
+        print("RESPONSE CONVERSATION HERE DYNAMICS ...")
+        for i, item in enumerate(response_conversation_json["script_items"]):
             chat_history.append((item['character_1'], item['character_2']))
-            temporal_memory.append({
-                'user': prompt,
-                'assistant': json.dumps(item)
-            })
+            time.sleep(5)
+            
+        response_conversation = "\n".join(f"- {fact}" for fact in response_conversation_json)
+
+        
+        temporal_memory.append({
+            'user':prompt,
+            'assistant':response_conversation
+        })
+        
+        past_context=current_context
 
     return jsonify({"response": chat_history}), 200
 

@@ -8,7 +8,7 @@ _ = load_dotenv(find_dotenv())
 # Set up your API keys
 mongo_uri = os.environ['MONGO_URI']
 ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
-model="claude-3-5-sonnet-20241022"
+model="claude-3-5-sonnet-20241022" 
 
 anthropic_client = anthropic.Anthropic(
     api_key=ANTHROPIC_API_KEY,
@@ -110,7 +110,7 @@ def agent_simulation_chat(prompt, temporal_memory, gpt_parameter=None):
 
     message = anthropic_client.messages.create(
         model=model,
-        max_tokens=8192,
+        max_tokens=4096,
         messages=messages
     )
    

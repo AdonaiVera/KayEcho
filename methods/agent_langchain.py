@@ -289,7 +289,7 @@ class langChainHandler:
         self.memory = MemorySaver()
 
         # Define the user state manager (Maybe use the new model)
-        llm_model="claude-3-opus-20240229" 
+        llm_model="claude-3-opus-20240229"  # claude-3-sonnet-20240229 #claude-3-5-sonnet-20241022
         self.llm_model = ChatAnthropic(model=llm_model)
 
         self.llm_model_legacy = AnthropicLLM(model='claude-2.1')
