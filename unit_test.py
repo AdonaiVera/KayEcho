@@ -1,9 +1,9 @@
 import requests
 
 # Define the URLs for both endpoints
-url_lang_chain_handler = 'http://127.0.0.1:8080/langChainHandler'
-url_lang_chain_handler_search = 'http://127.0.0.1:8080/langChainHandlerSearch'
-url_profile_linkedin = 'http://127.0.0.1:8080/userProfile'
+url_lang_chain_handler = 'https://kayecho-364607428894.us-central1.run.app/langChainHandler'
+url_lang_chain_handler_search = 'https://kayecho-364607428894.us-central1.run.app/langChainHandlerSearch'
+url_profile_linkedin = 'https://kayecho-364607428894.us-central1.run.app/userProfile'
 profile_linkedin = 'https://www.linkedin.com/in/ryanyoshimoto/'
 
 # Example data payload with user token and input text

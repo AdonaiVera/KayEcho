@@ -272,6 +272,7 @@ class langChainHandlerSearch:
 
                 
             print("\n---\n")
+
         # Final generation
         return response_agent
 
@@ -316,21 +317,28 @@ class langChainHandler:
                 (
                     "system",
                     """
-                    You are guiding the user to find what specific profile they are searching 
-                    Based on their previous answers and the conversation history, 
-                    help the user to find the best profile that they are looking for.
+                    You are guiding the user to outline the perfect profile they are searching for
+                    Ask relevant questions that will help refine the existing profile, only ask the most relevant question.
                     """
                 ),
                 MessagesPlaceholder(variable_name="messages")
             ]
         )
 
+        
+
         self.agent_discover_prompt = prompt_agent_discover | self.llm_model | StrOutputParser()
 
-        system = """Base of the conversation generate a profile that match what the user is looking for: example: search for a software developer with x and y skills"""
+        # Create the prompt template using the correct message formats
         generate_profile = ChatPromptTemplate.from_messages(
             [
-                ("system", system),
+                (
+                    "system", 
+                    """
+                    Based on the existing profile ({profile}) and the user's new specification {last_message}, 
+                    refine the profile to match exactly what the user is looking for. If there is no profile yet, create a very basic one
+                    """
+                ),
                 MessagesPlaceholder(variable_name="messages")
             ]
         )
@@ -366,9 +374,16 @@ class langChainHandler:
         """
         print("---DISCOVER PROFILES---")
         messages = state["messages"]
+        # If there is no profile, we will create one    
+        profile = state.get("profile", "")  
+
+        print("This is the state informtion x")
+        print(state)
+        last_message=messages[-1].content
 
         generation = self.agent_discover_prompt.invoke({"messages": messages}, self.config)
-        profile = self.generate_profile.invoke({"messages": messages}, self.config)
+
+        profile = self.generate_profile.invoke({"messages": messages, "profile":profile, "last_message":last_message}, self.config)
 
         return {"profile":profile, "messages": [AIMessage(content=generation)]}
     
@@ -385,7 +400,6 @@ class langChainHandler:
 
         # Stream the graph
         response_agent=""
-        print("lets do it ")
         for output in self.app.stream(inputs, self.config):
             for key, value in output.items():
                 # Node
@@ -397,7 +411,16 @@ class langChainHandler:
                     for message in value['messages']:
                         print(message)
                         response_agent=str(message.content)
+
+                if 'profile' in value:
+                    profile_user=str(value['profile'])
             print("\n---\n")
 
+        response={
+            "response_agent":response_agent,
+            "profile":profile_user
+        }
+
+        response = "Response agent: {}, profile: {} ".format(response_agent, profile_user)
         # Final generation
-        return response_agent
+        return response
