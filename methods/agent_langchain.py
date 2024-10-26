@@ -416,11 +416,6 @@ class langChainHandler:
                     profile_user=str(value['profile'])
             print("\n---\n")
 
-        response={
-            "response_agent":response_agent,
-            "profile":profile_user
-        }
 
-        response = "Response agent: {}, profile: {} ".format(response_agent, profile_user)
         # Final generation
-        return response
+        return response_agent, profile_user

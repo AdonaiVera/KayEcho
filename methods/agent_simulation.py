@@ -10,6 +10,7 @@ from io import BytesIO
 from PIL import Image
 import time
 from dotenv import load_dotenv, find_dotenv
+from methods.agent_llama_index import graphAgent
 import uuid
 
 from methods.agent_scrapper import extract_linkedin_profile, clean_linkedin_profile, get_post
@@ -91,25 +92,25 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
 
             (This is what is in {profile_name_2}'s head: {detailed_experiences_2} Beyond this, {profile_name_2} doesn't necessarily know anything more about {profile_name_1}!) 
 
-            Generate their conversation here as a script in a list, and output in JSON format with “script_items” (list of dicts with “character_1” and “character_2”).
+            Generate their conversation here as a script in a list, where each element of the list is a message from one of the characters. 
         '''.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, past_context=past_context, current_context=current_context, profile_name_1=profile_name_1, profile_name_2=profile_name_2, detailed_experiences_1=detailed_experiences_1, detailed_experiences_2=detailed_experiences_2)
         
         print("PROMPT WORKING CONVERSATION HERE DYNAMICS ...")
-        response=agent_simulation_chat(prompt, temporal_memory, gpt_param)
+        response_conversation_json=agent_simulation_chat(prompt, temporal_memory, gpt_param)
 
-        response_conversation_json=json.loads(response)
         print("RESPONSE CONVERSATION HERE DYNAMICS ...")
-        for i, item in enumerate(response_conversation_json["script_items"]):
-            print(item)
-            print(f"Left (Character 1): {item['character_1']}")
-            print(f"Right (Character 2): {item['character_2']}\n")
-
-            chat_history.append((item['character_1'], None))
+        print(response_conversation_json)
+        print(type(response_conversation_json))
+        
+        for nCount in range(0, len(response_conversation_json)-1, 2):
+            print(response_conversation_json[nCount])
+            chat_history.append((response_conversation_json[nCount], None))
             yield chat_history, ""
             time.sleep(2)
-            chat_history.append((None, item['character_2']))
+            chat_history.append((None, response_conversation_json[nCount+1]))
             yield chat_history, ""
             time.sleep(2)
+            
 
         response_conversation = "\n".join(f"- {fact}" for fact in response_conversation_json)
 
@@ -122,6 +123,9 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
         #respose_insights_response="\n".join(respose_insights)
 
         yield chat_history, ""
+            
+
+
             
 # Create Gradio interface
 with gr.Blocks(css=".title {color: white; text-align: center; background-color: #007BFF; padding: 10px; border-radius: 5px;}") as demo:

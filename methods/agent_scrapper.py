@@ -272,9 +272,6 @@ def get_post(linkedin_url):
             response = requests.request("GET", url, params=querystring)
             
             response_json=json.loads(response.text)
-            print("response")
-            print(response_json["success"])
-            print("dfinihs")
             if response_json["success"]:
                 break
         except:
@@ -288,10 +285,6 @@ def get_post(linkedin_url):
             return "", []
     
     response_json=json.loads(response.text)
-
-    print(response_json)
-    print(response)
-    print(response.text)
     post_list=[]
     for post in response_json["posts"]:
         post_content = f"Text post: {post['text']}, Date post: {post['activityDate']}"

@@ -90,7 +90,7 @@ def agent_simulation(prompt, gpt_parameter):
 class ScriptConversation(BaseModel):
     script: list[str]
 
-def agent_simulation_chat(prompt, temporal_memory, gpt_parameter):
+def agent_simulation_chat(prompt, temporal_memory, gpt_parameter=None):
     messages = []
 
     for memory in temporal_memory:
@@ -110,17 +110,11 @@ def agent_simulation_chat(prompt, temporal_memory, gpt_parameter):
 
     message = anthropic_client.messages.create(
         model=model,
-        max_tokens=1024,
+        max_tokens=8192,
         messages=messages
     )
-
-    # Format the output into a list of individual lines
-    formatted_output = message.content.splitlines()  # Splits by line for list format
-    
-    return formatted_output
-
-    
-    return message.content
+   
+    return message.content[0].text
 
 def find_insights(conversation, model=model):
     system_context = (
