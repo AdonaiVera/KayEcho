@@ -270,18 +270,28 @@ def get_post(linkedin_url):
     while True:
         try:
             response = requests.request("GET", url, params=querystring)
-            break
+            
+            response_json=json.loads(response.text)
+            print("response")
+            print(response_json["success"])
+            print("dfinihs")
+            if response_json["success"]:
+                break
         except:
             print("Error in request, trying again")
-            time.sleep(5)
-            nCount+=1
 
-            if nCount==5:
-                print("Not possible to get post information ")
-                return ""
+        time.sleep(5)
+        nCount+=1
+
+        if nCount==5:
+            print("Not possible to get post information ")
+            return "", []
     
     response_json=json.loads(response.text)
 
+    print(response_json)
+    print(response)
+    print(response.text)
     post_list=[]
     for post in response_json["posts"]:
         post_content = f"Text post: {post['text']}, Date post: {post['activityDate']}"

@@ -24,8 +24,8 @@ def combined_chat_response(input_text, history, request: gr.Request):
 
     # Check if the lang_chain_agent is already initialized for this session
     if founder not in session_agents:
-        #session_agents[founder] = langChainHandler(founder, config)
-        session_agents[founder] = langChainHandlerSearch(founder, config)
+        session_agents[founder] = langChainHandler(founder, config)
+        #session_agents[founder] = langChainHandlerSearch(founder, config)
 
     # Get the streaming response from the LangChain handler
     return session_agents[founder].stream_graph_updates(user_input=input_text)

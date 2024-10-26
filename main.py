@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify
 import os
+from flask import Flask, request, jsonify
 from methods.agent_langchain import langChainHandler, langChainHandlerSearch
-
+from methods.agent_scrapper import extract_linkedin_profile
 app = Flask(__name__)
 
 # Global dictionary to store session-specific agents
@@ -43,6 +43,20 @@ def lang_chain_handler_search():
     response = session_agents[user_token].stream_graph_updates(user_input=input_text)
     return jsonify({"response": response}), 200
 
+# Endpoint to handle langChainHandlerSearch requests
+@app.route('/userProfile', methods=['POST'])
+def userProfile():
+    data = request.get_json()
+
+    linkedin_id = data.get("linkedin_id")
+
+    if not linkedin_id:
+        return jsonify({"error": "User profile is required"}), 400
+    
+    response=extract_linkedin_profile(linkedin_id)
+    print(response)
+    return jsonify({"response": response}), 200
+
 if __name__ == "__main__":
     # Start the Flask server for API endpoints
-    app.run(port=5000)
+    app.run(port=8080)
