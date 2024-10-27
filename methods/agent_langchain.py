@@ -194,6 +194,7 @@ class langChainHandlerSearch:
                 filtered_docs.append(d)
             else:
                 print("---GRADE: DOCUMENT NOT RELEVANT---")
+                filtered_docs.append(d)
                 continue
         return {"documents": filtered_docs, "messages": messages}
     

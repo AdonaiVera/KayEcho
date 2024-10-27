@@ -1,8 +1,8 @@
 import requests
 
 # Define the URLs for all endpoints
-#url= 'http://100.66.8.252:8080'
-url= 'https://kayecho-364607428894.us-central1.run.app'
+url= 'http://100.66.8.252:8080'
+#url= 'https://kayecho-364607428894.us-central1.run.app'
 url_lang_chain_handler = f'{url}/langChainHandler'
 url_lang_chain_handler_search = f'{url}/langChainHandlerSearch'
 url_profile_linkedin = f'{url}/userProfile'
@@ -31,7 +31,6 @@ payload_search = {
     "text": "Computer vision engineer."
 }
 
-    
 
 # Function to test langChainHandler endpoint
 def test_lang_chain_handler():
@@ -47,7 +46,7 @@ def test_lang_chain_handler_search():
     response = requests.post(url_lang_chain_handler_search, json=payload_search)
     if response.status_code == 200:
         response_data = response.json()
-         
+
         # Print results for manual inspection
         print("Response from langChainHandlerSearch:", response_data)
     else:
@@ -69,9 +68,6 @@ def test_simulate_conversation():
     else:
         print("Error:", response.status_code, response.text)
 
-
-
-
 # Run tests
 print("\nTesting langChainHandlerSearch:")
 test_lang_chain_handler_search()
@@ -84,9 +80,11 @@ test_lang_chain_handler()
 
 print("\nTesting userProfile:")
 test_get_profile()
+'''
+
 
 print("\nTesting simulateConversation:")
 test_simulate_conversation()
-'''
+
 
 

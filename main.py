@@ -145,13 +145,12 @@ def simulate_conversation():
         response=agent_simulation_chat(prompt, temporal_memory)
 
         response_conversation_json=json.loads(response)
+        response_conversation=""
         print("RESPONSE CONVERSATION HERE DYNAMICS ...")
         for i, item in enumerate(response_conversation_json["script_items"]):
             chat_history.append((item['character_1'], item['character_2']))
-            time.sleep(5)
-            
-        response_conversation = "\n".join(f"- {fact}" for fact in response_conversation_json)
-
+            time.sleep(2)
+            response_conversation+=f"{item['character_1']}\n{item['character_2']}\n"
         
         temporal_memory.append({
             'user':prompt,

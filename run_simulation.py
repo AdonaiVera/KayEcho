@@ -63,7 +63,13 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
     insights_list=[]
 
     # Add the first two insights from the posts
-    insights_list=list_posts_1[:2]+list_posts_2[:2]
+    insights_list=list_posts_1[:3]+list_posts_2[:3]
+
+    list_posts_1_prefixed = [f"character_1 post: {post}" for post in list_posts_1]
+    list_posts_2_prefixed = [f"character_2 post: {post}" for post in list_posts_2]
+
+    # Combine the first two elements from each list
+    insights_list = list_posts_1_prefixed[:2] + list_posts_2_prefixed[:2]
 
     # Improve the way that we introduce the past context
     if not insights_list:
@@ -79,28 +85,75 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
     for current_context in topic_discussion:
         print("current context")
         print(current_context)
-        prompt='''
-            Character 1:{dynamic_profile_linkedin_1}
-            Character 2:{dynamic_profile_linkedin_2}
 
-            Past Context: {past_context}
-
-            Current Context: {current_context}
-
-            Toughts: {respose_insights}
-
-            (This is what is in {profile_name_1}'s head: {detailed_experiences_1} Beyond this, {profile_name_1} doesn't necessarily know anything more about {profile_name_2}!) 
-
-            (This is what is in {profile_name_2}'s head: {detailed_experiences_2} Beyond this, {profile_name_2} doesn't necessarily know anything more about {profile_name_1}!) 
-
-            Generate their conversation here as a script in a list, and output in JSON format with “script_items” (list of dicts with “character_1” and “character_2”).
-        '''.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, past_context=past_context, current_context=current_context, profile_name_1=profile_name_1, profile_name_2=profile_name_2, detailed_experiences_1=detailed_experiences_1, detailed_experiences_2=detailed_experiences_2, respose_insights=respose_insights)
+        print("Responnse Insights")
+        print(respose_insights)
         
+#        prompt='''
+#            Character 1:{dynamic_profile_linkedin_1}
+#            Character 2:{dynamic_profile_linkedin_2}
+#
+#            Past Context: {past_context}
+#
+#            Current Context: {current_context}
+#
+#            Toughts: {respose_insights}
+#
+#            (This is what is in {profile_name_1}'s head: {detailed_experiences_1} Beyond this, {profile_name_1} doesn't necessarily know anything more about {profile_name_2}!) 
+#
+#            (This is what is in {profile_name_2}'s head: {detailed_experiences_2} Beyond this, {profile_name_2} doesn't necessarily know anything more about {profile_name_1}!) 
+#
+#            Generate their conversation here as a script in a list, and output in JSON format with “script_items” (list of dicts with “character_1” and “character_2”).
+#        '''.format(dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, past_context=past_context, current_context=current_context, profile_name_1=profile_name_1, profile_name_2=profile_name_2, detailed_experiences_1=detailed_experiences_1, detailed_experiences_2=detailed_experiences_2, respose_insights=respose_insights)
+        
+        prompt = '''
+            Characters:
+            - {profile_name_1}: {dynamic_profile_linkedin_1}
+            - {profile_name_2}: {dynamic_profile_linkedin_2}
+
+            **Past Context**: {past_context}
+
+            **Current Context**: {current_context}
+
+            **Insights**: {respose_insights}
+
+            **Internal Monologues**:
+            - {profile_name_1} knows this about {profile_name_2}: {detailed_experiences_2}. Beyond this, {profile_name_1} has limited knowledge of {profile_name_2}.
+            - {profile_name_2} knows this about {profile_name_1}: {detailed_experiences_1}. Beyond this, {profile_name_2} has limited knowledge of {profile_name_1}.
+
+            **Objective**: Generate a conversation between {profile_name_1} and {profile_name_2} that starts casually and then progressively dives deeper into personal and professional insights. Each character should respond thoughtfully and build on the other’s responses, naturally encouraging open-ended, intelligent questions to uncover common ground, values, and motivations.
+
+            **Output Requirements**:
+            - Format as a JSON object with a list called “script_items.”
+            - Each list item is a dictionary with “character_1” (speaking {profile_name_1}) and “character_2” (speaking {profile_name_2}).
+
+            **Script Style**:
+            - Start the conversation lightly, with introductory or general questions.
+            - Gradually deepen the conversation, weaving in curiosity and uncovering meaningful insights.
+            - Maintain a friendly, engaging tone throughout, allowing questions to feel intuitive and authentic.
+
+            Example Structure:
+            - [Character 1] Initial greeting or light question.
+            - [Character 2] Response, with a follow-up question that adds depth.
+            - Continue, progressively exploring new layers of interests, experiences, and professional insights in each exchange.
+        '''.format(
+            dynamic_profile_linkedin_1=dynamic_profile_linkedin_1, 
+            dynamic_profile_linkedin_2=dynamic_profile_linkedin_2, 
+            past_context=past_context, 
+            current_context=current_context, 
+            profile_name_1=profile_name_1, 
+            profile_name_2=profile_name_2, 
+            detailed_experiences_1=detailed_experiences_1, 
+            detailed_experiences_2=detailed_experiences_2, 
+            respose_insights=respose_insights
+        )
+
         print("PROMPT WORKING CONVERSATION HERE DYNAMICS ...")
         response=agent_simulation_chat(prompt, temporal_memory, gpt_param)
 
         response_conversation_json=json.loads(response)
         print("RESPONSE CONVERSATION HERE DYNAMICS ...")
+        response_conversation=""
         for i, item in enumerate(response_conversation_json["script_items"]):
             print(item)
             print(f"Left (Character 1): {item['character_1']}")
@@ -112,14 +165,14 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
             chat_history.append((None, item['character_2']))
             yield chat_history, ""
             time.sleep(2)
-
-        response_conversation = "\n".join(f"- {fact}" for fact in response_conversation_json)
+            response_conversation+=f"{item['character_1']}\n{item['character_2']}\n"
 
         temporal_memory.append({
             'user':prompt,
             'assistant':response_conversation
         })
 
+        print("This is what I have to save it")
         print(response_conversation)
 
         # First Perspective 
@@ -130,6 +183,8 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
             Summarize what {profile_name_1} thought about {profile_name_2} in one short sentence. The sentence needs to be in third person:
         '''.format(response_conversation=response_conversation, profile_name_1=profile_name_1, profile_name_2=profile_name_2)
         
+        print("This is the prompt that we need")
+        print(prompt)
         response_summarize=agent_simulation(prompt, gpt_param)
         respose_insights.append(response_summarize)
 
