@@ -5,29 +5,45 @@ from llm import LLM
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 
 
 
 class Agent():
-    def __init__(self, name, backstory, llm):
+    def __init__(self, name, info, backstory, llm):
 
 
         self.name = name
         self.llm = llm.llm
         self.backstory = ",".join(backstory)
+        self.text_splitter = llm.text_splitter
+        self.info = info
 
         # chunks = self.get_chunks_self(backstory)
-        documents = []
-        for i, item in enumerate(backstory):
-            documents.append(Document(
-                page_content=item,
-                metadata={
-                    "source": "backstory",
-                    "id":i
-                }
-            ))
-        self.counter = i+1
+        # documents = []
+        # for i, item in enumerate(backstory):
+        #     documents.append(Document(
+        #         page_content=item,
+        #         metadata={
+        #             "source": "backstory",
+        #             "id":i
+        #         }
+        #     ))
+        # documents.append(Document(
+        #     page_content="My name is {name}".format(self.name),
+        #     metadata={
+        #             "source": "backstory",
+        #             "id":i
+        #         }
+        # ))
+        backstory.append("My name is {name}".format(name=self.name))
+
+        documents = self.text_splitter.create_documents(backstory)
+
+        
+        self.counter = 0
         # chunks = backstory
 
         self.db = Chroma.from_documents(
@@ -36,14 +52,16 @@ class Agent():
         persist_directory="memories/"+self.name.lower().strip().replace(" ","_")
     )
         
-        retriever = self.db.as_retriever()
+        self.retriever = self.db.as_retriever()
 
         self.qa = RetrievalQA.from_chain_type(
             llm=self.llm, 
             chain_type="stuff", 
-            retriever=retriever, 
+            retriever=self.retriever, 
             verbose=True
         )
+
+        self.active_context = ""
         
     def get_chunks_self(self, data):
         system_prompt = """Given the text output a list of data that summurizes the data as a list of facts in first person. 
@@ -71,24 +89,64 @@ class Agent():
     
     def answer_question(self, context, query):
 
-        prompt_template = """Use the following pieces of context to follow the question at the
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
+        
+
+        
+        prompt_template = """You are {name} - {info}.
+            If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            Use three sentences maximum and keep the answer as concise as possible.
 
             {context}
 
             Question: {query}
-            Answer:""".format(context=context, query=query)
+            Answer:"""
         
-        print(prompt_template)
+        custom_rag_prompt = PromptTemplate.from_template(prompt_template)
 
-        return self.qa(prompt_template)
+        rag_chain = (
+        {"context": self.retriever | format_docs, "question": RunnablePassthrough(), "info":self.info, "name":self.name}
+        | custom_rag_prompt
+        | self.llm
+        | StrOutputParser()
+        )
+
+        
+        
+        return rag_chain.invoke(rag_chain)
+    
+
+    
+    def recall_person(self, person):
+        print(person)
+
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
+    
+        
+        custom_rag_prompt = PromptTemplate.from_template(prompt_template)
+
+        rag_chain = (
+        {"context": self.retriever | format_docs, "person": RunnablePassthrough()}
+        | custom_rag_prompt
+        | self.llm
+        | StrOutputParser()
+        )
+
+        
+        
+        return rag_chain.invoke(person)
     
     def retrieve_memory(self, query):
         return self.qa(query)
 
     def save_memory(self, text, agent):
-        doc = Document(page_content=text,
-                       metadata={"source": "conversation", "agent":agent, "id": self.counter})
-        self.db.add_documents([doc],ids=[str(self.counter)])
+        # doc = Document(page_content=text,
+        #                metadata={"source": "conversation", "agent":agent, "id": self.counter})
+        
+        doc = self.text_splitter.create_documents([text])
+        self.db.add_documents(doc,ids=[str(self.counter)])
         self.counter+=1
 
 
