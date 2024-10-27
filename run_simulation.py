@@ -151,6 +151,9 @@ def simulate_chat(linkedin_1, linkedin_2, chat_history):
         print("PROMPT WORKING CONVERSATION HERE DYNAMICS ...")
         response=agent_simulation_chat(prompt, temporal_memory, gpt_param)
 
+        print("new responsex")
+        print(response)
+
         response_conversation_json=json.loads(response)
         print("RESPONSE CONVERSATION HERE DYNAMICS ...")
         response_conversation=""

@@ -124,28 +124,25 @@ class langChainHandlerSearch:
 
         # Define the nodes
         workflow.add_node("retrieve", self.retrieve) 
-        workflow.add_node("grade_profile", self.grade_profiles)
-        workflow.add_node("transform_query", self.transform_query)  
+        #workflow.add_node("grade_profile", self.grade_profiles)
+        #workflow.add_node("transform_query", self.transform_query)  
 
         # Build graph edges
         workflow.add_edge(START, "retrieve")
-        workflow.add_edge("retrieve", "grade_profile")
-        workflow.add_edge("transform_query", "retrieve")
-        workflow.add_conditional_edges(
-            "grade_profile",
-            self.decide_to_generate,
-            {
-                "transform_query": "transform_query",
-                "generate": END,
-            },
-        )
+        workflow.add_edge("retrieve", END)
+        #workflow.add_edge("transform_query", "retrieve")
+        #workflow.add_conditional_edges(
+        #    "grade_profile",
+        #    self.decide_to_generate,
+        #    {
+        #        "transform_query": "transform_query",
+        #        "generate": END,
+        #    },
+        #)
         
         # Compile
         self.app = workflow.compile(checkpointer=self.memory)
     
-        graph_image_path = "figures/graph_image_main.png"
-        with open(graph_image_path, "wb") as f:
-            f.write(self.app.get_graph().draw_mermaid_png())
 
     def retrieve(self, state):
         """
@@ -245,7 +242,7 @@ class langChainHandlerSearch:
             print("---DECISION: GENERATE---")
             return "generate"
     
-    # Define the function to simulate the chat
+    
     def get_profile_match(self, linkedin_1, linkedin_2, profile_1_looking_for):
 
         dynamic_profile_linkedin_1_base = extract_linkedin_profile(linkedin_1)

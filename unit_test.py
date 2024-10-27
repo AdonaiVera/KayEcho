@@ -21,14 +21,14 @@ payload_profile = {
 }
 
 payload_simulate_conversation = {
-    "linkedin_1": profile_linkedin_1,
-    "linkedin_2": profile_linkedin_2
+    "linkedin_1": "https://www.linkedin.com/in/jonathan-groberg/",
+    "linkedin_2": "https://www.linkedin.com/in/dynamicwebpaige"
 }
 
-payload_search = {
-    "linkedin_id": profile_linkedin_1,
-    "token": "3669fe7bf99a1e31bc490138ad16e253",  # Replace with actual user token
-    "text": "Computer vision engineer."
+payload_search={
+    "linkedin_id":"https://www.linkedin.com/in/jonathan-groberg/",
+    "token":"4c1d11b167a6a23112bef0a2fa91e776667",
+    "text":"experienced professional with over 12 years in applied machine learning, predictive modeling, data science, and visualization",
 }
 
 
