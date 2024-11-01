@@ -222,7 +222,6 @@ class Agent():
 
 
 def test_get_profile(profile_linkedin_1):
-    url= 'https://kayecho-364607428894.us-central1.run.app'
     url_profile_linkedin = f'{url}/userProfile'
     payload_profile = {
         "linkedin_id": profile_linkedin_1
